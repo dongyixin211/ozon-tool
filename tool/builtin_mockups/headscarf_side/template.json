@@ -1,0 +1,33 @@
+{
+  "scene_id": "headscarf_side",
+  "canvas": [
+    800,
+    800
+  ],
+  "left_box": [
+    0,
+    0,
+    432,
+    800
+  ],
+  "right_quad": [
+    [
+      416,
+      48
+    ],
+    [
+      776,
+      32
+    ],
+    [
+      784,
+      496
+    ],
+    [
+      400,
+      528
+    ]
+  ],
+  "size_label_y_ratio": 0.86,
+  "source_reference": "c__Users_23393_AppData_Roaming_Cursor_User_workspaceStorage_f68d0fb3ded2a28c7943df5365b6381a_images_2_06-e0d7c0ec-2e35-4e33-acb2-f1805bf4a01a.png"
+}
