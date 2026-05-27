@@ -1,0 +1,17 @@
+{
+  "image_api_key": "",
+  "text_api_key": "",
+  "base_url": "https://breakout.wenwen-ai.com/v1",
+  "image_base_url": "https://xiaoqian.art/v1",
+  "image_provider": "xiaoqian",
+  "provider_api_keys": {},
+  "text_provider": "wenwen",
+  "text_provider_api_keys": {},
+  "image_model": "gpt-image-2",
+  "text_model": "gpt-5.5",
+  "quality": "high",
+  "scene_source_root": "",
+  "scene_output_root": "",
+  "scene_aspect_ratio": "3:4",
+  "scene_count": "8"
+}
