@@ -1,0 +1,48 @@
+# 仅版本管理 tool/ 与 ozon-plsj/，忽略 ozon 目录下其它文件夹
+/*
+!/.gitignore
+!/README.md
+!/config.example.json
+!/push-to-github.ps1
+!/tool/
+!/ozon-plsj/
+
+# 本地配置（含 API Key、店铺数据，勿提交）
+**/config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+
+# 打包产物
+tool/exe_build/build/
+tool/exe_build/dist/
+*.exe
+tool/exe_build.zip
+
+# 测试/临时输出
+test_export.xlsx
+_excel_test_input.json
+ozon-plsj/scene_output/
+ozon-plsj/test_scenes_local/
+ozon-plsj/test_scenes_v2/
+ozon-plsj/test_*/
+ozon-plsj/*/
+ozon-plsj/*.xlsx
+ozon-plsj/*.jpg
+ozon-plsj/*.png
+*.log
+
+# IDE / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
