@@ -10,7 +10,8 @@
 ## 环境
 
 - Python 3.9+
-- 运行 GUI：`python tool/app.py`
+- macOS 运行 GUI：双击 `启动Ozon工具.command`
+- 命令行运行 GUI：`python3 tool/app.py`
 - 场景图 CLI：`python ozon-plsj/generate_scenes.py -i 原图.png -o 输出目录`
 
 ## 配置
@@ -18,15 +19,15 @@
 复制示例配置后填写本地路径与 API Key：
 
 ```text
-copy config.example.json tool\config.json
-copy config.example.json ozon-plsj\config.json
+cp config.example.json tool/config.json
+cp config.example.json ozon-plsj/config.json
 ```
 
 `config.json` 已加入 `.gitignore`，不会进入版本库。
 
 ## 打包
 
-在 `ozon-plsj` 目录执行 `一键打包.bat`，会调用 `tool/exe_build/build_release.ps1` 生成 `OzonTool_*.exe`。
+Windows 可在 `ozon-plsj` 目录执行 `一键打包.bat`，生成 `OzonTool_*.exe`。macOS 当前建议直接用源码方式运行。
 
 ## GitHub
 

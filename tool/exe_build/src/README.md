@@ -22,8 +22,8 @@
 
 ## 启动
 
-```powershell
-C:\Users\23393\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe C:\Users\23393\Documents\Codex\2026-05-14\ozon\app.py
+```bash
+python3 app.py
 ```
 
 ## 界面字段

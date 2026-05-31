@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { SpreadsheetFile, Workbook } from "file:///C:/Users/23393/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
+import { SpreadsheetFile, Workbook } from "@oai/artifact-tool";
 
 const inputPath = process.argv[2];
 if (!inputPath) {

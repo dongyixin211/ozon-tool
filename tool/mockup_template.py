@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import platform
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -54,11 +55,21 @@ def resolve_template_dir(mockup_root: Path | None, scene_id: str) -> Path | None
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    for path in (
-        "C:/Windows/Fonts/segoeui.ttf",
-        "C:/Windows/Fonts/arial.ttf",
-        "C:/Windows/Fonts/msyh.ttc",
-    ):
+    if platform.system() == "Darwin":
+        candidates = (
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/Supplemental/Songti.ttc",
+        )
+    else:
+        candidates = (
+            "C:/Windows/Fonts/segoeui.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/msyh.ttc",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        )
+    for path in candidates:
         try:
             return ImageFont.truetype(path, size=size)
         except OSError:
