@@ -1,7 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
 
-TOOL_ROOT = Path(SPECPATH).resolve().parent
+BUILD_ROOT = Path(SPECPATH).resolve().parent
+TOOL_ROOT = BUILD_ROOT.parent
 APP_ENTRY = TOOL_ROOT / "app.py"
 
 a = Analysis(

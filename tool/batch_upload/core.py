@@ -330,7 +330,12 @@ def _assign_rich_img_dict(img: dict, url: str) -> None:
             img[key] = url
 
 
-def _replace_rich_content_images(data: dict, image_urls: list[str]) -> dict:
+def _replace_rich_content_images(
+    data: dict,
+    image_urls: list[str],
+    *,
+    next_url: Callable[[], str] | None = None,
+) -> dict:
     """按富内容展示顺序（blocks 等）依次替换为第 1、2、3… 张商品图；同一块的 src/srcMobile 用同一张。"""
     if not image_urls:
         return data
@@ -342,6 +347,8 @@ def _replace_rich_content_images(data: dict, image_urls: list[str]) -> dict:
 
     def next_product_url() -> str:
         nonlocal slot_index
+        if next_url:
+            return next_url()
         url = image_urls[min(slot_index, len(image_urls) - 1)]
         slot_index += 1
         return url
@@ -387,6 +394,18 @@ def _replace_rich_json_image_urls(text: str, image_urls: list[str]) -> str:
     if not isinstance(data, dict) or not isinstance(data.get("content"), list):
         return text
     return json.dumps(_replace_rich_content_images(data, image_urls), ensure_ascii=False)
+
+
+def _replace_rich_json_image_urls_with_cursor(text: str, image_urls: list[str], next_url: Callable[[], str]) -> str:
+    if not image_urls or not text.strip():
+        return text
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return text
+    if not isinstance(data, dict) or not isinstance(data.get("content"), list):
+        return text
+    return json.dumps(_replace_rich_content_images(data, image_urls, next_url=next_url), ensure_ascii=False)
 
 
 def _is_rich_content_attribute(attribute: dict) -> bool:
@@ -854,7 +873,11 @@ def _replace_template_image_urls(value: object, image_urls: list[str]) -> object
             return text
         stripped = text.strip()
         if stripped.startswith("{") and '"content"' in stripped:
-            replaced = _replace_rich_json_image_urls(text, image_urls)
+            replaced = _replace_rich_json_image_urls_with_cursor(
+                text,
+                image_urls,
+                lambda: next_image_url(""),
+            )
             if replaced != text:
                 return replaced
 

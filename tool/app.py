@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import concurrent.futures
 import json
@@ -100,6 +102,16 @@ LOG_MAX_LINES = 4000
 DEFAULT_OSS_BUCKET = "dyx-ozon-images"
 DEFAULT_OSS_ENDPOINT = "oss-cn-beijing.aliyuncs.com"
 DEFAULT_OSS_PUBLIC_DOMAIN = "https://dyx-ozon-images.oss-cn-beijing.aliyuncs.com"
+
+if sys.platform == "darwin":
+    UI_FONT_FAMILY = "PingFang SC"
+    MONO_FONT_FAMILY = "Menlo"
+elif os.name == "nt":
+    UI_FONT_FAMILY = "Microsoft YaHei UI"
+    MONO_FONT_FAMILY = "Consolas"
+else:
+    UI_FONT_FAMILY = "Noto Sans CJK SC"
+    MONO_FONT_FAMILY = "DejaVu Sans Mono"
 
 DEFAULT_IMAGE_PROMPT = (
     "你是一名 Ozon / Wildberries 俄罗斯电商视觉设计师。我将提供一张商品原图作为参考。\n\n"
@@ -851,6 +863,15 @@ class BatchWorker:
 
 
 class App(tk.Tk):
+    PAGE_DEFINITIONS = (
+        ("generate", "素材生成", "素材生成", "配置目录、AI 接口并批量生成商品图与文案", "_build_generate_tab"),
+        ("scene", "场景图", "场景图生成", "AI 生图或本地合成（本地不消耗 API Key）", "_build_scene_tab"),
+        ("prompt", "提示词", "提示词管理", "管理图片、标题与详情页的提示词模板", "_build_prompt_tab"),
+        ("upload", "批量上架", "批量上架", "多店铺配置、商品模板与 Ozon 批量提交", "_build_upload_tab"),
+        ("inventory", "商品运维", "商品运维", "零库存补货与无条形码商品处理", "_build_inventory_tab"),
+        ("log", "运行日志", "运行日志", "查看任务执行过程与错误信息", "_build_log_tab"),
+    )
+
     def __init__(self) -> None:
         super().__init__()
         self.title("Ozon Tool · 商品素材与上架工作台")
@@ -952,6 +973,7 @@ class App(tk.Tk):
         self.scene_size_label_var = tk.StringVar(value=DEFAULT_SIZE_LABEL)
         self.local_scene_worker: LocalSceneWorker | None = None
         self.local_scene_thread: threading.Thread | None = None
+        self._scene_prompt_template = DEFAULT_SCENE_PROMPT_TEMPLATE
 
         self._apply_theme()
         self._build_ui()
@@ -962,11 +984,14 @@ class App(tk.Tk):
         self.configure(bg="#f0f2f5")
         style = ttk.Style(self)
         try:
-            style.theme_use("clam")
+            if sys.platform == "darwin":
+                style.theme_use("aqua")
+            else:
+                style.theme_use("clam")
         except tk.TclError:
             pass
 
-        font_ui = ("Microsoft YaHei UI", 10)
+        font_ui = (UI_FONT_FAMILY, 10)
         page_bg = "#f0f2f5"
         card_bg = "#ffffff"
         border = "#f0f0f0"
@@ -978,8 +1003,8 @@ class App(tk.Tk):
         style.configure(".", font=font_ui, background=page_bg, foreground=text_primary)
         style.configure("App.TFrame", background=page_bg)
         style.configure("Sidebar.TFrame", background="#ffffff")
-        style.configure("SidebarLogo.TLabel", background="#ffffff", foreground=text_primary, font=("Microsoft YaHei UI", 15, "bold"))
-        style.configure("SidebarHint.TLabel", background="#ffffff", foreground=text_secondary, font=("Microsoft YaHei UI", 9))
+        style.configure("SidebarLogo.TLabel", background="#ffffff", foreground=text_primary, font=(UI_FONT_FAMILY, 15, "bold"))
+        style.configure("SidebarHint.TLabel", background="#ffffff", foreground=text_secondary, font=(UI_FONT_FAMILY, 9))
         style.configure("Nav.TButton", padding=(14, 10), background="#ffffff", foreground=text_primary, borderwidth=0, anchor="w")
         style.map("Nav.TButton", background=[("active", "#f5f5f5")])
         style.configure(
@@ -989,24 +1014,24 @@ class App(tk.Tk):
             foreground=primary,
             borderwidth=0,
             anchor="w",
-            font=("Microsoft YaHei UI", 10, "bold"),
+            font=(UI_FONT_FAMILY, 10, "bold"),
         )
         style.map("NavActive.TButton", background=[("active", "#bae0ff")])
         style.configure("Topbar.TFrame", background="#ffffff")
-        style.configure("PageTitle.TLabel", background="#ffffff", foreground=text_primary, font=("Microsoft YaHei UI", 18, "bold"))
-        style.configure("PageHint.TLabel", background="#ffffff", foreground=text_secondary, font=("Microsoft YaHei UI", 10))
+        style.configure("PageTitle.TLabel", background="#ffffff", foreground=text_primary, font=(UI_FONT_FAMILY, 18, "bold"))
+        style.configure("PageHint.TLabel", background="#ffffff", foreground=text_secondary, font=(UI_FONT_FAMILY, 10))
         style.configure("Card.TFrame", background=card_bg, relief="solid", borderwidth=1, bordercolor=border)
         style.configure("CardInner.TFrame", background=card_bg)
         style.configure("ShopCard.TFrame", background=card_bg, relief="solid", borderwidth=1, bordercolor=border)
         style.configure("ShopCardHeader.TFrame", background=card_bg)
         style.configure("ShopCardBody.TFrame", background=card_bg)
-        style.configure("Section.TLabel", background=card_bg, foreground=text_primary, font=("Microsoft YaHei UI", 13, "bold"))
+        style.configure("Section.TLabel", background=card_bg, foreground=text_primary, font=(UI_FONT_FAMILY, 13, "bold"))
         style.configure("Hint.TLabel", background=card_bg, foreground=text_secondary)
         style.configure("TLabel", background=page_bg, foreground=text_primary)
         style.configure("Card.TLabel", background=card_bg, foreground=text_primary)
-        style.configure("ShopName.TLabel", background=card_bg, foreground=text_primary, font=("Microsoft YaHei UI", 12, "bold"))
-        style.configure("ShopMeta.TLabel", background=card_bg, foreground=text_secondary, font=("Microsoft YaHei UI", 9))
-        style.configure("Badge.TLabel", background="#722ed1", foreground="#ffffff", font=("Microsoft YaHei UI", 9, "bold"), padding=(10, 4))
+        style.configure("ShopName.TLabel", background=card_bg, foreground=text_primary, font=(UI_FONT_FAMILY, 12, "bold"))
+        style.configure("ShopMeta.TLabel", background=card_bg, foreground=text_secondary, font=(UI_FONT_FAMILY, 9))
+        style.configure("Badge.TLabel", background="#722ed1", foreground="#ffffff", font=(UI_FONT_FAMILY, 9, "bold"), padding=(10, 4))
         style.configure("Tag.TLabel", background="#fafafa", foreground=text_secondary, padding=(10, 3))
         style.configure("TagSuccess.TLabel", background="#f6ffed", foreground="#52c41a", padding=(10, 3))
         style.configure("TagDanger.TLabel", background="#fff2f0", foreground="#ff4d4f", padding=(10, 3))
@@ -1023,17 +1048,13 @@ class App(tk.Tk):
         style.map("TCheckbutton", background=[("active", card_bg)])
 
     def _show_page(self, page_key: str) -> None:
-        titles = {
-            "generate": ("素材生成", "配置目录、AI 接口并批量生成商品图与文案"),
-            "scene": ("场景图生成", "AI 生图或本地合成（本地不消耗 API Key）"),
-            "prompt": ("提示词管理", "管理图片、标题与详情页的提示词模板"),
-            "upload": ("批量上架", "多店铺配置、商品模板与 Ozon 批量提交"),
-            "inventory": ("商品运维", "零库存补货与无条形码商品处理"),
-            "log": ("运行日志", "查看任务执行过程与错误信息"),
-        }
-        title, hint = titles.get(page_key, ("", ""))
+        page_meta = self.page_meta.get(page_key)
+        if not page_meta:
+            return
+        title, hint = page_meta
         self.page_title_var.set(title)
         self.page_hint_var.set(hint)
+        self._ensure_page_built(page_key)
         for key, frame in self.page_frames.items():
             if key == page_key:
                 frame.grid(row=0, column=0, sticky="nsew")
@@ -1042,6 +1063,21 @@ class App(tk.Tk):
         for key, button in self.nav_buttons.items():
             button.configure(style="NavActive.TButton" if key == page_key else "Nav.TButton")
         self._active_page = page_key
+
+    def _ensure_page_built(self, page_key: str) -> None:
+        if page_key in self._built_pages:
+            return
+        frame = self.page_frames[page_key]
+        builder = self.page_builders[page_key]
+        previous_cursor = self.cget("cursor")
+        self.configure(cursor="watch")
+        self.update_idletasks()
+        try:
+            builder(frame)
+            self._built_pages.add(page_key)
+        finally:
+            self.configure(cursor=previous_cursor)
+        self.update_idletasks()
 
     def _build_ui(self) -> None:
         root = ttk.Frame(self, style="App.TFrame")
@@ -1064,14 +1100,8 @@ class App(tk.Tk):
         nav_wrap.pack(fill="both", expand=True)
         self.nav_buttons: dict[str, ttk.Button] = {}
         self._active_page = "generate"
-        for page_key, label in (
-            ("generate", "素材生成"),
-            ("scene", "场景图"),
-            ("prompt", "提示词"),
-            ("upload", "批量上架"),
-            ("inventory", "商品运维"),
-            ("log", "运行日志"),
-        ):
+        self.page_meta = {key: (title, hint) for key, _nav_label, title, hint, _builder_name in self.PAGE_DEFINITIONS}
+        for page_key, label, _title, _hint, _builder_name in self.PAGE_DEFINITIONS:
             button = ttk.Button(
                 nav_wrap,
                 text=f"  {label}",
@@ -1104,16 +1134,13 @@ class App(tk.Tk):
         pages_host.rowconfigure(0, weight=1)
 
         self.page_frames: dict[str, ttk.Frame] = {}
-        for page_key in ("generate", "scene", "prompt", "upload", "inventory", "log"):
+        self.page_builders: dict[str, Callable[[ttk.Frame], None]] = {}
+        self._built_pages: set[str] = set()
+        for page_key, _nav_label, _title, _hint, builder_name in self.PAGE_DEFINITIONS:
             frame = ttk.Frame(pages_host, style="App.TFrame")
             self.page_frames[page_key] = frame
+            self.page_builders[page_key] = getattr(self, builder_name)
 
-        self._build_generate_tab(self.page_frames["generate"])
-        self._build_scene_tab(self.page_frames["scene"])
-        self._build_prompt_tab(self.page_frames["prompt"])
-        self._build_upload_tab(self.page_frames["upload"])
-        self._build_inventory_tab(self.page_frames["inventory"])
-        self._build_log_tab(self.page_frames["log"])
         self._show_page("generate")
 
     def _create_scrollable_page(self, parent: ttk.Frame) -> tuple[ttk.Frame, tk.Canvas]:
@@ -1279,7 +1306,7 @@ class App(tk.Tk):
         prompt_box.columnconfigure(0, weight=1)
         prompt_box.rowconfigure(0, weight=1)
         self.scene_prompt_text = self._text_box(prompt_box, height=14)
-        self.scene_prompt_text.insert("1.0", DEFAULT_SCENE_PROMPT_TEMPLATE)
+        self.scene_prompt_text.insert("1.0", self._current_scene_prompt_template())
         self.scene_prompt_text.grid(row=0, column=0, sticky="nsew")
 
         actions = self._section(content, "操作", "推荐：本地合成不耗 Key；AI 模式需配置 API Key", 3)
@@ -1323,6 +1350,9 @@ class App(tk.Tk):
         self.description_prompt_text = self._text_box(editor, height=10)
         self.description_prompt_text.grid(row=3, column=1, sticky="nsew", pady=(0, 0), padx=(10, 0))
         self.description_prompt_text.insert("1.0", DEFAULT_DESCRIPTION_PROMPT)
+        selected_name = self.template_name_var.get().strip() or DEFAULT_TEMPLATE_NAME
+        if selected_name in self.prompt_templates:
+            self._apply_prompt_bundle(self.prompt_templates[selected_name])
         self._bind_page_mousewheel(content, canvas)
 
     def _build_log_tab(self, parent: ttk.Frame) -> None:
@@ -1347,7 +1377,7 @@ class App(tk.Tk):
             highlightcolor="#1677ff",
             padx=14,
             pady=12,
-            font=("Consolas", 10),
+            font=(MONO_FONT_FAMILY, 10),
         )
         self.log_text.grid(row=1, column=0, sticky="nsew")
 
@@ -1994,7 +2024,7 @@ class App(tk.Tk):
             highlightcolor="#1677ff",
             padx=10,
             pady=10,
-            font=("Microsoft YaHei UI", 10),
+            font=(UI_FONT_FAMILY, 10),
         )
 
     def _path_row(
@@ -2226,6 +2256,17 @@ class App(tk.Tk):
         self.log_queue.put(f"{now_stamp()}  {message}")
 
     def _current_prompt_bundle(self) -> dict[str, str]:
+        if not all(
+            hasattr(self, name)
+            for name in ("image_prompt_text", "title_prompt_text", "description_prompt_text")
+        ):
+            selected_name = self.template_name_var.get().strip() or DEFAULT_TEMPLATE_NAME
+            bundle = self.prompt_templates.get(selected_name) or self.prompt_templates.get(DEFAULT_TEMPLATE_NAME) or {}
+            return {
+                "image_prompt_template": str(bundle.get("image_prompt_template", DEFAULT_IMAGE_PROMPT)),
+                "title_prompt_template": str(bundle.get("title_prompt_template", DEFAULT_TITLE_PROMPT)),
+                "description_prompt_template": str(bundle.get("description_prompt_template", DEFAULT_DESCRIPTION_PROMPT)),
+            }
         return {
             "image_prompt_template": self.image_prompt_text.get("1.0", "end").strip(),
             "title_prompt_template": self.title_prompt_text.get("1.0", "end").strip(),
@@ -2233,6 +2274,11 @@ class App(tk.Tk):
         }
 
     def _apply_prompt_bundle(self, bundle: dict[str, str]) -> None:
+        if not all(
+            hasattr(self, name)
+            for name in ("image_prompt_text", "title_prompt_text", "description_prompt_text")
+        ):
+            return
         self.image_prompt_text.delete("1.0", "end")
         self.image_prompt_text.insert("1.0", bundle.get("image_prompt_template", DEFAULT_IMAGE_PROMPT))
         self.title_prompt_text.delete("1.0", "end")
@@ -2245,9 +2291,15 @@ class App(tk.Tk):
 
     def _refresh_template_options(self) -> None:
         names = sorted(self.prompt_templates.keys())
-        self.template_combobox["values"] = names
+        if hasattr(self, "template_combobox"):
+            self.template_combobox["values"] = names
         if not self.template_name_var.get().strip():
             self.template_name_var.set(DEFAULT_TEMPLATE_NAME)
+
+    def _current_scene_prompt_template(self) -> str:
+        if hasattr(self, "scene_prompt_text"):
+            self._scene_prompt_template = self.scene_prompt_text.get("1.0", "end").strip()
+        return self._scene_prompt_template or DEFAULT_SCENE_PROMPT_TEMPLATE
 
     def _load_selected_template(self) -> None:
         name = self.template_name_var.get().strip()
@@ -2291,6 +2343,9 @@ class App(tk.Tk):
         self._append_log(f"已删除提示词模板：{name}")
 
     def _flush_logs(self) -> None:
+        if not hasattr(self, "log_text"):
+            self.after(250, self._flush_logs)
+            return
         lines = []
         for _ in range(LOG_FLUSH_BATCH_SIZE):
             try:
@@ -2347,6 +2402,7 @@ class App(tk.Tk):
         self._sync_text_provider_api_key_from_field()
         provider_id = self._current_image_provider_id()
         text_provider_id = self._current_text_provider_id()
+        prompt_bundle = self._current_prompt_bundle()
         return JobConfig(
             source_root=source_root,
             generated_root=generated_root,
@@ -2360,9 +2416,9 @@ class App(tk.Tk):
             image_model=self.image_model_var.get().strip() or provider_default_model(provider_id),
             text_provider=text_provider_id,
             text_model=self.text_model_var.get().strip() or text_provider_default_model(text_provider_id),
-            image_prompt_template=self.image_prompt_text.get("1.0", "end").strip(),
-            title_prompt_template=self.title_prompt_text.get("1.0", "end").strip(),
-            description_prompt_template=self.description_prompt_text.get("1.0", "end").strip(),
+            image_prompt_template=prompt_bundle["image_prompt_template"],
+            title_prompt_template=prompt_bundle["title_prompt_template"],
+            description_prompt_template=prompt_bundle["description_prompt_template"],
             watermark_path=watermark_path,
             quality=self.quality_var.get().strip(),
             max_folders=max_folders,
@@ -2561,7 +2617,7 @@ class App(tk.Tk):
             single_image=single_image,
             aspect_ratio=self.scene_aspect_ratio_var.get().strip() or DEFAULT_ASPECT_RATIO,
             scene_count=scene_count,
-            scene_prompt_template=self.scene_prompt_text.get("1.0", "end").strip(),
+            scene_prompt_template=self._current_scene_prompt_template(),
             quality=self.quality_var.get().strip(),
             max_workers=max_workers,
             max_folders=max_folders,
@@ -3684,7 +3740,7 @@ class App(tk.Tk):
             "scene_max_folders": self.scene_max_folders_var.get(),
             "scene_mockup_root": self.scene_mockup_root_var.get(),
             "scene_size_label": self.scene_size_label_var.get(),
-            "scene_prompt_template": self.scene_prompt_text.get("1.0", "end").strip(),
+            "scene_prompt_template": self._current_scene_prompt_template(),
             **self._current_prompt_bundle(),
         }
         write_config_payload(payload)
@@ -3765,8 +3821,10 @@ class App(tk.Tk):
         self.scene_size_label_var.set(data.get("scene_size_label", DEFAULT_SIZE_LABEL))
         scene_prompt = str(data.get("scene_prompt_template") or "").strip()
         if scene_prompt:
-            self.scene_prompt_text.delete("1.0", "end")
-            self.scene_prompt_text.insert("1.0", scene_prompt)
+            self._scene_prompt_template = scene_prompt
+            if hasattr(self, "scene_prompt_text"):
+                self.scene_prompt_text.delete("1.0", "end")
+                self.scene_prompt_text.insert("1.0", scene_prompt)
         self.convert_originals_var.set(bool(data.get("convert_originals", False)))
         self.generate_copy_var.set(bool(data.get("generate_copy", True)))
         self.export_excel_var.set(bool(data.get("export_excel", True)))

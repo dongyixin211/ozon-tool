@@ -3,7 +3,9 @@
 !/.gitignore
 !/README.md
 !/config.example.json
+!/requirements.txt
 !/push-to-github.ps1
+!/启动Ozon工具.command
 !/tool/
 !/ozon-plsj/
 

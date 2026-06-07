@@ -1,11 +1,15 @@
 # Ozon 商品素材与上架工具
 
-本仓库包含 Ozon 电商工具的两部分：
+本仓库包含 Ozon 电商工具的源码、打包脚本和发布辅助目录：
 
 | 目录 | 说明 |
 |------|------|
-| `tool/` | 主程序源码（GUI、批量生图、Ozon 上架等） |
+| `tool/app.py` | GUI 主入口（素材生成、场景图、提示词、批量上架、商品运维） |
+| `tool/batch_upload/` | Ozon Seller API、OSS 上传、库存/条码/视频/商品更新逻辑 |
+| `tool/builtin_mockups/` | 本地场景图合成使用的内置模板素材 |
+| `tool/exe_build/` | Windows PyInstaller 打包配置与脚本 |
 | `ozon-plsj/` | 发布/打包目录（场景图 CLI、一键打包脚本） |
+| `requirements.txt` | 运行 GUI 和 CLI 所需的 Python 依赖 |
 
 ## 环境
 
@@ -28,6 +32,12 @@ cp config.example.json ozon-plsj/config.json
 ## 打包
 
 Windows 可在 `ozon-plsj` 目录执行 `一键打包.bat`，生成 `OzonTool_*.exe`。macOS 当前建议直接用源码方式运行。
+
+## 项目整理原则
+
+- 主源码只保留在 `tool/`，打包脚本直接引用当前源码，避免维护旧源码副本。
+- 上架 Excel 模板由程序运行时生成，不在仓库里保存二进制模板文件。
+- 本地配置、测试输出、打包产物和系统临时文件由 `.gitignore` 排除。
 
 ## GitHub
 
