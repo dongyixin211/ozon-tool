@@ -7,6 +7,8 @@ from openpyxl import Workbook, load_workbook
 from PIL import Image
 
 from batch_upload.core import (
+    MAX_OZON_IMPORT_ITEMS,
+    OZON_ENDPOINTS,
     apply_rich_json_to_item,
     build_oss_folder,
     build_oss_object_key,
@@ -23,6 +25,11 @@ from batch_upload.core import (
 
 
 class BatchUploadTests(unittest.TestCase):
+    def test_ozon_endpoint_registry_contains_used_paths(self) -> None:
+        self.assertEqual(OZON_ENDPOINTS["product_info_list"], "/v3/product/info/list")
+        self.assertEqual(OZON_ENDPOINTS["product_import"], "/v3/product/import")
+        self.assertEqual(OZON_ENDPOINTS["products_stocks"], "/v2/products/stocks")
+
     def test_build_oss_object_key_uses_shop_sku_and_filename(self) -> None:
         shop_id = "4481877"
         sku = "头巾货号001"
@@ -49,7 +56,7 @@ class BatchUploadTests(unittest.TestCase):
         client = FakeOzonClient()
 
         self.assertTrue(client.product_exists("SKU001"))
-        self.assertEqual(client.payloads[0][0], "/v3/product/info/list")
+        self.assertEqual(client.payloads[0][0], OZON_ENDPOINTS["product_info_list"])
         self.assertEqual(client.payloads[0][1]["offer_id"], ["SKU001"])
         self.assertNotIn("filter", client.payloads[0][1])
 
@@ -62,6 +69,33 @@ class BatchUploadTests(unittest.TestCase):
                 return {"result": {"items": []}}
 
         self.assertFalse(FakeOzonClient().product_exists("SKU001"))
+
+    def test_import_products_posts_items_payload(self) -> None:
+        class FakeOzonClient(OzonSellerClient):
+            def __init__(self) -> None:
+                super().__init__("client", "key")
+                self.payloads = []
+
+            def _request_json(self, endpoint: str, payload: dict) -> dict:
+                self.payloads.append((endpoint, payload))
+                return {"result": {"task_id": 123}}
+
+        client = FakeOzonClient()
+        response = client.import_products([{"offer_id": "SKU001"}])
+
+        self.assertEqual(response["result"]["task_id"], 123)
+        self.assertEqual(client.payloads[0][0], OZON_ENDPOINTS["product_import"])
+        self.assertEqual(client.payloads[0][1]["items"], [{"offer_id": "SKU001"}])
+
+    def test_import_products_rejects_empty_items(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "不能为空"):
+            OzonSellerClient("client", "key").import_products([])
+
+    def test_import_products_rejects_more_than_ozon_limit(self) -> None:
+        items = [{"offer_id": f"SKU{index:03d}"} for index in range(MAX_OZON_IMPORT_ITEMS + 1)]
+
+        with self.assertRaisesRegex(RuntimeError, str(MAX_OZON_IMPORT_ITEMS)):
+            OzonSellerClient("client", "key").import_products(items)
 
     def test_read_excel_rows_with_chinese_headers(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

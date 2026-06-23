@@ -13,8 +13,8 @@
 
 ## 环境
 
-- Python 3.9+
-- macOS 运行 GUI：双击 `启动Ozon工具.command`
+- Python 3.9+；macOS GUI 推荐 Python 3.11+ / Tk 8.6+，系统自带 Python 3.9 的 Tk 8.5 可能白屏
+- macOS 运行 GUI：双击 `启动Ozon工具.command`，脚本会优先选择可正常显示 GUI 的 Python
 - 命令行运行 GUI：`python3 tool/app.py`
 - 场景图 CLI：`python ozon-plsj/generate_scenes.py -i 原图.png -o 输出目录`
 
@@ -38,6 +38,7 @@ Windows 可在 `ozon-plsj` 目录执行 `一键打包.bat`，生成 `OzonTool_*.
 - 主源码只保留在 `tool/`，打包脚本直接引用当前源码，避免维护旧源码副本。
 - 上架 Excel 模板由程序运行时生成，不在仓库里保存二进制模板文件。
 - 本地配置、测试输出、打包产物和系统临时文件由 `.gitignore` 排除。
+- 项目优化审计与后续路线见 `docs/enterprise_review.md`。
 
 ## GitHub
 

@@ -20,6 +20,19 @@ from openpyxl.styles import Alignment, Font, PatternFill
 
 SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 OZON_BASE_URL = "https://api-seller.ozon.ru"
+MAX_OZON_IMPORT_ITEMS = 100
+OZON_ENDPOINTS = {
+    "product_list": "/v3/product/list",
+    "product_info_list": "/v3/product/info/list",
+    "product_info_attributes": "/v4/product/info/attributes",
+    "product_import": "/v3/product/import",
+    "product_import_info": "/v1/product/import/info",
+    "warehouse_list": "/v2/warehouse/list",
+    "product_info_stocks": "/v4/product/info/stocks",
+    "products_stocks": "/v2/products/stocks",
+    "barcode_generate": "/v1/barcode/generate",
+    "barcode_add": "/v1/barcode/add",
+}
 RESULT_FILE_NAME = "batch_upload_results.xlsx"
 UPLOAD_RESULT_HEADERS = ["是否上传成功", "上传成功SKU", "Ozon task_id", "OSS 文件夹", "错误信息"]
 DESCRIPTION_ATTRIBUTE_IDS = {4191}
@@ -635,20 +648,20 @@ class OzonSellerClient:
             raise RuntimeError(f"Ozon 连接失败: {exc.reason}") from exc
 
     def test_connection(self) -> dict:
-        return self._request_json("/v3/product/list", {"filter": {}, "limit": 1})
+        return self._request_json(OZON_ENDPOINTS["product_list"], {"filter": {}, "limit": 1})
 
     def product_exists(self, offer_id: str) -> bool:
-        info = self._request_json("/v3/product/info/list", {"offer_id": [offer_id]})
+        info = self._request_json(OZON_ENDPOINTS["product_info_list"], {"offer_id": [offer_id]})
         return bool(_extract_items(info))
 
     def get_template_product(self, offer_id: str) -> dict:
-        info = self._request_json("/v3/product/info/list", {"offer_id": [offer_id]})
+        info = self._request_json(OZON_ENDPOINTS["product_info_list"], {"offer_id": [offer_id]})
         info_items = _extract_items(info)
         if not info_items:
             raise RuntimeError(f"未找到模板商品货号: {offer_id}")
 
         attributes = self._request_json(
-            "/v4/product/info/attributes",
+            OZON_ENDPOINTS["product_info_attributes"],
             {"filter": {"offer_id": [offer_id]}, "limit": 1, "sort_dir": "ASC"},
         )
         attribute_items = _extract_items(attributes)
@@ -659,13 +672,17 @@ class OzonSellerClient:
         return merged
 
     def import_products(self, items: list[dict]) -> dict:
-        return self._request_json("/v3/product/import", {"items": items})
+        if not items:
+            raise RuntimeError("Ozon 商品导入列表不能为空。")
+        if len(items) > MAX_OZON_IMPORT_ITEMS:
+            raise RuntimeError(f"Ozon 单次商品导入最多 {MAX_OZON_IMPORT_ITEMS} 个。")
+        return self._request_json(OZON_ENDPOINTS["product_import"], {"items": items})
 
     def get_import_info(self, task_id: int | str) -> dict:
-        return self._request_json("/v1/product/import/info", {"task_id": int(task_id)})
+        return self._request_json(OZON_ENDPOINTS["product_import_info"], {"task_id": int(task_id)})
 
     def list_warehouses(self, *, limit: int = 200, offset: int = 0) -> list[dict]:
-        data = self._request_json("/v2/warehouse/list", {"limit": limit, "offset": offset})
+        data = self._request_json(OZON_ENDPOINTS["warehouse_list"], {"limit": limit, "offset": offset})
         top_level = data.get("warehouses")
         if isinstance(top_level, list):
             return [item for item in top_level if isinstance(item, dict)]
@@ -683,7 +700,7 @@ class OzonSellerClient:
 
     def list_products(self, *, last_id: str = "", limit: int = 100, visibility: str = "ALL") -> dict:
         payload: dict = {"filter": {"visibility": visibility}, "last_id": last_id, "limit": limit}
-        return self._request_json("/v3/product/list", payload)
+        return self._request_json(OZON_ENDPOINTS["product_list"], payload)
 
     def product_info_stocks(
         self,
@@ -702,16 +719,16 @@ class OzonSellerClient:
         if product_ids:
             filter_payload["product_id"] = [str(product_id) for product_id in product_ids]
         payload: dict = {"cursor": cursor, "filter": filter_payload, "limit": limit}
-        return self._request_json("/v4/product/info/stocks", payload)
+        return self._request_json(OZON_ENDPOINTS["product_info_stocks"], payload)
 
     def update_stocks(self, stocks: list[dict]) -> dict:
-        return self._request_json("/v2/products/stocks", {"stocks": stocks})
+        return self._request_json(OZON_ENDPOINTS["products_stocks"], {"stocks": stocks})
 
     def generate_barcodes(self, product_ids: list[int]) -> dict:
-        return self._request_json("/v1/barcode/generate", {"product_ids": [str(product_id) for product_id in product_ids]})
+        return self._request_json(OZON_ENDPOINTS["barcode_generate"], {"product_ids": [str(product_id) for product_id in product_ids]})
 
     def add_barcode(self, product_id: int, barcode: str) -> dict:
-        return self._request_json("/v1/barcode/add", {"product_id": int(product_id), "barcode": barcode.strip()})
+        return self._request_json(OZON_ENDPOINTS["barcode_add"], {"product_id": int(product_id), "barcode": barcode.strip()})
 
 
 def _extract_items(data: dict) -> list[dict]:

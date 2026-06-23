@@ -9,6 +9,7 @@ supports_tk_gui() {
   "$1" - <<'PY' >/dev/null 2>&1
 import tkinter as tk
 root = tk.Tk()
+root.withdraw()
 patch = root.tk.call("info", "patchlevel")
 root.destroy()
 major, minor, *_ = [int(part) for part in patch.split(".")]
@@ -43,7 +44,7 @@ fi
 export TK_SILENCE_DEPRECATION=1
 echo "使用 Python: $PYTHON_CMD"
 
-if ! "$PYTHON_CMD" -c "import requests; from PIL import Image; import openpyxl" >/dev/null 2>&1; then
+if ! "$PYTHON_CMD" -c "from PIL import Image; import openpyxl" >/dev/null 2>&1; then
   echo "首次运行，正在安装依赖..."
   "$PYTHON_CMD" -m pip install -r requirements.txt
 fi

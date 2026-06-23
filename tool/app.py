@@ -51,6 +51,13 @@ from batch_upload.video_ops import (
     resolve_template_product_for_video,
     update_listed_products_videos,
 )
+from config_store import (
+    CONFIG_PATH,
+    ConfigStoreError,
+    config_exists,
+    read_config_payload,
+    write_config_payload,
+)
 from local_scene_composer import (
     DEFAULT_SIZE_LABEL,
     LOCAL_SCENE_PRESETS,
@@ -89,8 +96,6 @@ from scene_generator import (
 
 
 SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
-APP_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-CONFIG_PATH = APP_DIR / "config.json"
 
 DEFAULT_BASE_URL = "https://breakout.wenwen-ai.com/v1"
 DEFAULT_IMAGE_MODEL = "gpt-image-2"
@@ -143,20 +148,6 @@ DEFAULT_TEMPLATE_NAME = "默认模板"
 
 def now_stamp() -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S")
-
-
-def read_config_payload() -> dict:
-    if not CONFIG_PATH.exists():
-        return {}
-    try:
-        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def write_config_payload(data: dict) -> None:
-    CONFIG_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def list_subfolders(root: Path) -> list[Path]:
@@ -3748,12 +3739,12 @@ class App(tk.Tk):
             self._append_log(f"配置已保存到 {CONFIG_PATH}")
 
     def _load_config(self) -> None:
-        if not CONFIG_PATH.exists():
+        if not config_exists():
             self._refresh_shop_options()
             return
         try:
-            data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
+            data = read_config_payload(raise_on_error=True)
+        except ConfigStoreError:
             self._append_log("配置文件读取失败，已忽略旧配置。")
             return
 

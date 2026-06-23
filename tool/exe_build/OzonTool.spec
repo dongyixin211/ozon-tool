@@ -13,6 +13,7 @@ a = Analysis(
     hiddenimports=[
         "image_providers",
         "text_providers",
+        "config_store",
         "image_api_client",
         "scene_generator",
         "local_scene_composer",
